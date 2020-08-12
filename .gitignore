@@ -1,0 +1,9 @@
+*.ipynb
+
+/.venv_sim
+/.vscode
+
+/.vscode
+__pycache__/
+
+logs/
