@@ -2,8 +2,8 @@
 
 /.venv_sim
 /.vscode
+/.pytest_cache
 
-/.vscode
 __pycache__/
 
 logs/
