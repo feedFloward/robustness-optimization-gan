@@ -90,5 +90,6 @@ def simulation_run(factor_config : object, noise_config : object):
         targets.THROUGHPUT.append(drain.count)
         targets.CYCLE_TIME.append(sum(targets.CYCLE_TIME) / len(targets.CYCLE_TIME))
 
-    print(f"mean throughput: {sum(targets.THROUGHPUT) / len(targets.THROUGHPUT)}")
-    print(f"mean cycle time: {sum(targets.CYCLE_TIME) / len(targets.CYCLE_TIME)}")
+    # print(f"mean throughput: {sum(targets.THROUGHPUT) / len(targets.THROUGHPUT)}")
+    # print(f"mean cycle time: {sum(targets.CYCLE_TIME) / len(targets.CYCLE_TIME)}")
+    return sum(targets.THROUGHPUT) / len(targets.THROUGHPUT)
