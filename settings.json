@@ -1,0 +1,10 @@
+{
+    "factor_gan_parameter": {
+        "hidden_units_gen": [1024],
+        "hidden_units_disc": [1024],
+        "latent_dim": [64],
+        "lr_gen": 0.0001,
+        "lr_disc": 0.0001,
+        "output_dim": 2
+    }
+}

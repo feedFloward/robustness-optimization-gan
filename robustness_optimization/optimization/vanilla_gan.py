@@ -7,9 +7,9 @@ from typing import List
 
 class Generator:
     def __init__(self, hidden_units : List[int], latent_dim : int, output_dim : int):
-        self.latent_dim = latent_dim
+        self.latent_dim = latent_dim[0]
         self.model = Sequential()
-        self.model.add(Input(shape=(latent_dim,)))
+        self.model.add(Input(shape=(self.latent_dim,)))
         for num_units in hidden_units:
             self.model.add(Dense(num_units, activation= 'relu'))
         self.model.add(Dense(output_dim, activation='tanh'))
@@ -29,22 +29,24 @@ class Discriminator:
         self.model.add(Dense(1, activation= 'sigmoid'))
 
 class GAN(Model):
-    def __init__(self, hidden_units_gen, hidden_units_disc, latent_dim, gen_output_dim):
+    def __init__(self, hidden_units_gen, hidden_units_disc, latent_dim, output_dim, lr_disc, lr_gen):
         super(GAN, self).__init__()
         self.generator = Generator(
             hidden_units= hidden_units_gen,
             latent_dim= latent_dim,
-            output_dim= gen_output_dim
+            output_dim= output_dim
         )
         self.discriminator = Discriminator(
             hidden_units= hidden_units_disc,
-            input_dim= gen_output_dim
+            input_dim= output_dim
         )
+        self.lr_gen = lr_gen
+        self.lr_disc = lr_disc
 
-    def compile(self, lr_disc, lr_gen):
+    def compile(self):
         super(GAN, self).compile()
-        self.d_optimizer = Adam(learning_rate= lr_disc)
-        self.g_optimizer = Adam(learning_rate= lr_gen)
+        self.d_optimizer = Adam(learning_rate= self.lr_disc)
+        self.g_optimizer = Adam(learning_rate= self.lr_gen)
         self.loss_fn = BinaryCrossentropy(from_logits= False)
 
     def train_step(self, real_input):
@@ -86,3 +88,7 @@ class GAN(Model):
 
     def _generator_loss(self, fake_input):
         return self.loss_fn(tf.ones_like(fake_input), fake_input)
+
+class GanMonitor(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs= None):
+        print(self.model.generator.generate_samples(7))
