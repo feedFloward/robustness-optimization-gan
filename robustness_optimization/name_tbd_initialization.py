@@ -5,7 +5,7 @@
 !!! name des files und ort (welcher unterordner sind zu bestimmen)
 '''
 import json
-from robustness_optimization.types.optimization_types import Settings
+from robustness_optimization.types.settings_types import Settings
 
 SETTINGS_PATH = "settings.json" # muss immer im root ordner 'robustness-optimization-gan' liegen
 

@@ -44,19 +44,3 @@ class ModelInterface:
                     target_vals.append(self.run(factor_config= factor_design[0], noise_config= noise_config))
                 noise_plan.append({'target': target_vals})
             return noise_design
-        
-
-# if __name__ == '__main__':
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("-factor_dict", help="path to json with factor name and value as key value pairs", type=str)
-#     parser.add_argument("-noise_dict", type=str)
-#     parser.add_argument("-simulation_settings", type=str)
-#     args = parser.parse_args()
-#     print(args.factor_dict)
-#     print(args.noise_dict)
-#     print(args.simulation_settings)
-#     '''
-#     json files auslesen und main mit argumenten aufrufen...
-#     '''
-#     print('...ended')
-#     main(args)

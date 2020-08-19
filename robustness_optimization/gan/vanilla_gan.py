@@ -3,6 +3,7 @@ from tensorflow.keras.layers import Input, Dense
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import BinaryCrossentropy
 import tensorflow as tf
+import numpy as np
 from typing import List
 
 class Generator:
@@ -88,6 +89,14 @@ class GAN(Model):
 
     def _generator_loss(self, fake_input):
         return self.loss_fn(tf.ones_like(fake_input), fake_input)
+
+    def generate_samples(self, num_samples):
+        samples = self.generator.generate_samples(num_samples= num_samples).numpy()
+
+        #!!! temporäre Lösung, evtl. eher in Design Klasse definieren, ob gesqueezt wird
+        samples = np.squeeze(samples)
+
+        return samples
 
 class GanMonitor(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs= None):

@@ -1,32 +1,68 @@
-from typing import Dict, List
+from robustness_optimization.types.helpers import uniform
 
-class Parameter:
-    def __call__(self):
-        return {key: val for (key, val) in self.__dict__.items()}
+from typing import List
 
-class Factor:
-    def __init__(self, lower_bound, upper_bound, discrete, mixture, num_mixture_components, **kwargs):
-        self.lower_bound = lower_bound
-        self.upper_bound = upper_bound
-        self.discrete = discrete
-        self.mixture = mixture
-        self.num_mixture_components = num_mixture_components
+def _to_dict(func):
+    def wrapper_to_dict(config, sampling_model=None):
+        sample = func(config, sampling_model)
+        current_config = {}
+        for (param_name, value) in zip(config.__dict__.keys(), sample):
+            current_config.update({param_name: value})
+        return current_config
+    return wrapper_to_dict
 
-class GanParameter(Parameter):
-    def __init__(self, hidden_units_gen : List[int], hidden_units_disc : List[int], latent_dim : List[int], lr_gen : float, lr_disc : float, output_dim : int):
-        self.hidden_units_gen = hidden_units_gen
-        self.hidden_units_disc = hidden_units_disc
-        self.latent_dim = latent_dim
-        self.lr_gen = lr_gen
-        self.lr_disc = lr_disc
-        self.output_dim = output_dim
 
-class FactorDefinition(Parameter):
+class Configuration:
     def __init__(self, **kwargs):
-        for (key, val) in kwargs.items():
-            self.__dict__.update({key: Factor(**val)})
+        '''
+        Argumente müssten Vektor von Werten sein
+        Zuordnung zu den namen der Faktoren über irgendein mapping (indizes)
 
-class Settings:
-    def __init__(self, factor_gan_parameter: Dict, factor_definition: Dict, **kwargs):
-        self.factor_gan_parameter = GanParameter(**factor_gan_parameter)
-        self.factor_definition = FactorDefinition(**factor_definition)
+        sollte können:
+            funktion um für configuration SN Ration berechnen zu können
+        '''
+        for (key, val) in kwargs.items():
+            self.__dict__.update({key: val})
+        self.num_parameter = len(self.__dict__)
+
+        
+    @_to_dict
+    def from_uniform(self, *args, **kwargs):
+        return uniform(self.num_parameter)
+
+    @_to_dict
+    def from_model(self, sampling_model):
+        return sampling_model.generate_samples(1)
+
+
+class Design:
+    '''
+    sollte können:
+        methoden um configs zu sortieren anhand von SN Ratio
+    '''
+    def __init__(self, configurations : List[Configuration]):
+        self.state = configurations
+
+    def sortblabla(self):
+        pass
+
+
+class DesignMaker:
+    '''
+    sollte können:
+        anhand von Settings.factor_definition/noise_definition initialisiert werden
+        methoden zum samplen haben (mit interface zum gan)
+        methoden zum normalisiern/skalieren haben
+        ...
+    '''
+    def __init__(self, num_samples, parameter, sampling_model):
+        self.num_samples = num_samples
+        self.parameter = parameter
+        self.sampling_model = sampling_model
+
+    def get_uniform_sample(self):
+        return Design([Configuration(**self.parameter.__dict__).from_uniform() for sample in range(self.num_samples)])
+
+    def get_sample_from_model(self):
+        return Design([Configuration(**self.parameter.__dict__).from_model(self.sampling_model) for sample in range(self.num_samples)])
+
