@@ -90,6 +90,8 @@ class GAN(Model):
     def _generator_loss(self, fake_input):
         return self.loss_fn(tf.ones_like(fake_input), fake_input)
 
+    # folgende methoden sind schnittstelle zu DesignMaker:
+
     def generate_samples(self, num_samples):
         samples = self.generator.generate_samples(num_samples= num_samples).numpy()
 
@@ -97,6 +99,8 @@ class GAN(Model):
         samples = np.squeeze(samples)
 
         return samples
+
+    
 
 class GanMonitor(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs= None):
