@@ -50,10 +50,13 @@ class Configuration:
         for (key, val) in kwargs.items():
             self.__dict__.update({key: val})
 
+    def _output_dim(self):
+        return sum([param.num_mixture_components if param.mixture else 1 for (name, param) in self.__dict__.items()])
+
     @_transform
     @_to_dict
     def from_uniform(self, *args, **kwargs):
-        return uniform(len(self.__dict__))
+        return uniform(self._output_dim())
 
     @_transform
     @_to_dict
