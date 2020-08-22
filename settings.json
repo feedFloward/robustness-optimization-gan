@@ -12,8 +12,7 @@
         "hidden_units_disc": [1024],
         "latent_dim": [64],
         "lr_gen": 0.0001,
-        "lr_disc": 0.0001,
-        "output_dim": 3
+        "lr_disc": 0.0001
     },
     "factor_definition": {
         "num_machines": {
@@ -44,6 +43,12 @@
         "num_samples": 7
     },
     "noise_design_definition": {
-        "num_samples": 5
+        "num_samples": 5,
+        "num_noise_designs": 3
+    },
+    "response_definition": {
+        "name": "throughput",
+        "target": "max",
+        "value": 0
     }
 }

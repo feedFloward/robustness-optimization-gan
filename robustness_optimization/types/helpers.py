@@ -26,3 +26,18 @@ def type_casting(value, param_definition):
         return int(value)
     else:
         return float(value)
+
+def larger_the_better(response_vals):
+    return -10 * np.log(sum(1 / np.array(response_vals)**2)/len(response_vals))
+
+def smaller_the_better(response_vals):
+    return -10 * np.log(sum(np.array(response_vals)**2)/len(response_vals))
+
+def get_sn_calc_func(target, value, **kwargs):
+    if target == 'max':
+        return larger_the_better
+    elif target == 'min':
+        return smaller_the_better
+
+def reshape_to_design(values_array, num_configs):
+    return np.reshape(values_array, newshape= (num_configs, -1))

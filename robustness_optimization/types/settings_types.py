@@ -35,11 +35,31 @@ class DesignDefinition(Definition):
         for (key, val) in kwargs.items():
             self.__dict__.update({key: val})
 
+class ResponseDefinition(Definition):
+    def __init__(self, **kwargs):
+        for (key, val) in kwargs.items():
+            self.__dict__.update({key: val})
+
 class Settings:
-    def __init__(self, factor_gan_parameter: Dict, noise_gan_parameter: Dict, factor_definition: Dict, noise_definition: Dict, factor_design_definition: Dict, noise_design_definition: Dict):
+    def __init__(self, factor_gan_parameter: Dict,
+                noise_gan_parameter: Dict,
+                factor_definition: Dict,
+                noise_definition: Dict,
+                factor_design_definition: Dict,
+                noise_design_definition: Dict,
+                response_definition: Dict):
+
+        #calculate gan output dimension:
+        noise_gan_parameter.update({"output_dim": sum([param["num_mixture_components"] \
+                                    if param["mixture"] else 1 for (name, param) in noise_definition.items()]) \
+                                    * noise_design_definition["num_samples"]})
+        factor_gan_parameter.update({"output_dim": sum([param["num_mixture_components"] \
+                                    if param["mixture"] else 1 for (name, param) in factor_definition.items()])})
+
         self.factor_gan_parameter = GanDefinition(**factor_gan_parameter)
         self.noise_gan_parameter = GanDefinition(**noise_gan_parameter)
         self.factor_definition = ParameterDefinition(**factor_definition)
         self.noise_definition = ParameterDefinition(**noise_definition)
         self.factor_design_definition = DesignDefinition(**factor_design_definition)
         self.noise_design_definition = DesignDefinition(**noise_design_definition)
+        self.response_definition = ResponseDefinition(**response_definition)

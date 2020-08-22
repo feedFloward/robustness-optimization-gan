@@ -18,5 +18,4 @@ def main():
         noise_sampling_model= noise_sampling_model,
     )
 
-    print(optimization.factor_candidates.state)
-    print(optimization.noise_candidates.state)
+    optimization.run()
