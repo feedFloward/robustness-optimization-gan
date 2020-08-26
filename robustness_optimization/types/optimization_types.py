@@ -1,6 +1,6 @@
 from robustness_optimization.types import helpers
 
-from typing import List
+from typing import List, Dict
 
 def _to_dict(func):
     def wrapper_to_dict(config, sampling_model=None, *args, **kwargs):
@@ -37,6 +37,29 @@ def _transform(func):
         return sample_dict
     return wrapper_transform
 
+def _re_transform(func):
+    def wrapper_re_transform(maker_object, feedback : List[Dict], *args, **kwargs):
+        sample_to_array = helpers.retransform(feedback, maker_object)
+        return func(maker_object, feedback= sample_to_array, *args, **kwargs)
+    return wrapper_re_transform
+
+def print_iteration(func):
+    def print_wrapper(optimization, *args, **kwargs):
+        print(40*"=")
+        print(f"ITERATION {optimization.iterations} === {func.__name__}")
+        print(40*"=")
+        print(f"current SN Ratio:\t{optimization.sn_ratio}")
+        print("\n")
+        print("best factor configuration: ")
+        print(optimization.factor_champion)
+        print("\n")
+        print("worst noise design: ")
+        optimization._print_design(optimization.noise_champion)
+        func(optimization)
+        print(f"current SN Ratio after iteration:\t{optimization.sn_ratio}")
+        
+    return print_wrapper
+
 
 class Configuration:
     def __init__(self, **kwargs):
@@ -61,7 +84,7 @@ class Configuration:
     @_transform
     @_to_dict
     def from_model(self, sampling_model, *args, **kwargs):
-        return sampling_model.generate_samples(1)
+        return sampling_model.generate_samples()
 
     @_transform
     @_to_dict
@@ -77,20 +100,66 @@ class Design:
     def __init__(self, configurations : List[Configuration]):
         self.state = configurations
 
+    def __iter__(self):
+        return iter(self.state)
+
+    def __next__(self):
+        return self.state
+
+    def __getitem__(self, index):
+        return self.state[index]
+
     def get_best_configuration(self, sn_calc_func):
         for config in self.state:
             config.update({'sn_ratio': sn_calc_func(config['response'])})
+
+        # evtl. muss unabhängig vom optimierungsziel immer das erste element gewählt werden?
         if sn_calc_func.__name__ == 'larger_the_better':
             return sorted(self.state, key= lambda conf : conf['sn_ratio'])[-1]
         elif sn_calc_func.__name__ == 'smaller_the_better':
             return sorted(self.state, key= lambda conf : conf['sn_ratio'])[0]
 
 class NoiseDesign:
+    def __init__(self, configurations : List[Configuration]):
+        self.state = configurations
+        self.robustness = None
+
+    def calc_robustness(self, sn_calc_func):
+        self.robustness = sn_calc_func([noise_conf['response'] for noise_conf in self.state])
+
+    def __iter__(self):
+        return iter(self.state)
+
+    def __next__(self):
+        return self.state
+
+    def __getitem__(self, index):
+        return self.state[index]
+
+
+class DesignList:
     '''
     list of noise designs
     '''
     def __init__(self, designs):
         self.state = designs
+
+    def __iter__(self):
+        return iter(self.state)
+
+    def __next__(self):
+        return self.state
+
+    def __getitem__(self, index):
+        return self.state[index]
+    
+    def get_worst_design(self, sn_calc_func):
+        # for design in self.state:
+            # design.append({'sn_ratio': sn_calc_func([noise_conf['response'] for noise_conf in design])})
+        for design in self.state:
+            design.calc_robustness(sn_calc_func)
+        return sorted(self, key= lambda design: design.robustness)[0]
+        # return sorted(self.state, key= lambda design : next(filter(lambda item: 'sn_ratio' in item.keys(), design))['sn_ratio'])[0]
 
 class DesignMaker:
     '''
@@ -114,8 +183,9 @@ class DesignMaker:
     def get_sample_from_model(self):
         return Design([Configuration(**self.parameter.__dict__).from_model(self.sampling_model) for sample in range(self.num_samples)])
 
-    def update_model(self, design):
-        self.sampling_model.update(design)
+    @_re_transform
+    def update_model(self, feedback):
+        self.sampling_model.update(feedback)
 
 
 class NoiseDesignMaker(DesignMaker):
@@ -124,12 +194,18 @@ class NoiseDesignMaker(DesignMaker):
         self.num_noise_designs = num_noise_designs
 
     def get_uniform_sample(self):
-        return NoiseDesign([[Configuration(**self.parameter.__dict__).from_uniform() for sample in range(self.num_samples)] for design in range(self.num_noise_designs)])
+        return DesignList([NoiseDesign([Configuration(**self.parameter.__dict__).from_uniform() for sample in range(self.num_samples)]) for design in range(self.num_noise_designs)])
+        # return DesignList([[Configuration(**self.parameter.__dict__).from_uniform() for sample in range(self.num_samples)] for design in range(self.num_noise_designs)])
 
     def get_sample_from_model(self):
-        sample = self.sampling_model.generate_samples(1)
-        sample = helpers.reshape_to_design(sample, self.num_samples)
-        return NoiseDesign([[Configuration(**self.parameter.__dict__).from_array(config) for config in sample] for design in range(self.num_noise_designs)])
+        # sample = self.sampling_model.generate_samples()
+        # sample = helpers.reshape_to_design(sample, self.num_samples)
+        # return DesignList([NoiseDesign([Configuration(**self.parameter.__dict__).from_array(config) for config in sample]) for design in range(self.num_noise_designs)])
+        return DesignList([NoiseDesign([Configuration(**self.parameter.__dict__)\
+        .from_array(config) for config in helpers.reshape_to_design(self.sampling_model.generate_samples(), self.num_samples)])\
+         for design in range(self.num_noise_designs)])
+        # return DesignList([[Configuration(**self.parameter.__dict__).from_array(config) for config in sample] for design in range(self.num_noise_designs)])
+        
 
 
 class Optimization:
@@ -146,7 +222,7 @@ class Optimization:
         self.noise_candidates = self.noise_design_maker.get_uniform_sample()
 
         #set noise champion for initialization randomly:
-        self.noise_champion = self.noise_candidates.state[0]
+        self.noise_champion = self.noise_candidates[0]
 
         self.sn_calc_func = helpers.get_sn_calc_func(**self.settings.response_definition())
 
@@ -156,58 +232,92 @@ class Optimization:
     def run(self):
         print("find best candidate from initial factor design...\n")
         self.factor_champion = self.evaluate_factor_design()
+        #assign initial sn ratio to initial noise design:
+        self.noise_champion.robustness = self.factor_champion['sn_ratio']
         print("best configuration found:")
         print(self.factor_champion)
+        self.sn_ratio = self.factor_champion['sn_ratio']
+        # round sn_ratio -> evtl. später als funktion
+        self.sn_ratio = round(self.sn_ratio, 3)
+        print("current SN Ratio:")
+        print(self.sn_ratio)
 
         while self.attempts < 3:
             self.attempts += 1
             self.iteration_factors()
+            self.iteration_noise()
 
+        print("finished optimization with best factor configuration:")
+        print(self.factor_champion)
+        print("and noise design:")
+        self._print_design(self.noise_champion)
+
+    @print_iteration
     def iteration_factors(self):
         self.iterations += 1
-        print("~~~~~~~~~~~~~~~~\n")
-        print(f"iteration #{self.iterations} - FACTORS")
-        print("best factor configuration so far: ")
-        print(self.factor_champion)
-        self.factor_candidates = self.factor_design_maker.get_uniform_sample()
+        self.factor_candidates = self.factor_design_maker.get_sample_from_model()
+        #append current factor champion (champions always tested with changed noise design!)
+        self.factor_candidates.state.append(self.factor_champion)
         print("factor design tested:")
-        self._print_design(self.factor_candidates.state)
+        self._print_design(self.factor_candidates)
         contender = self.evaluate_factor_design()
         print("best factor configuration evaluated:")
         print(contender)
-        if contender["sn_ratio"] > self.factor_champion["sn_ratio"]:
-            print("new champion found")
+
+        #DIESER ABGLEICH WIRD ERSETZT DURCH: IST CONTENDER GLEICH DEM ALTEN CHAMP???????
+        if contender["sn_ratio"] > self.sn_ratio:
+            print("new champion found:")
+            print(contender)
+            print("with sn-ratio: ")
+            print(contender["sn_ratio"])
             self.factor_champion = contender
+            self.factor_design_maker.update_model(self.factor_champion)
+            self.sn_ratio = contender["sn_ratio"]
+            self.sn_ratio = round(self.sn_ratio, 3)
             self.attempts = 0
         else:
             print(f"no improvement after {self.attempts} attempts...")
 
+    @print_iteration
     def iteration_noise(self):
         self.iterations += 1
-        print("~~~~~~~~~~~~~~~~\n")
-        print(f"iteration #{self.iterations} - NOISE")
-        print("worst noise design so far:")
-        print(self.noise_champion)
-        self.noise_candidates = self.noise_design_maker.get_uniform_sample()
+        self.noise_candidates = self.noise_design_maker.get_sample_from_model()
+        # append current noise champion (always tested with changed factor config)
+        self.noise_candidates.state.append(self.noise_champion)
+        contender = self.evaluate_noise_designs()
+        print("worst noise design evaluated")
+        self._print_design(contender)
+        if contender.robustness < self.sn_ratio:
+            print("new noise champion found")
+            self._print_design(contender)
+            print("with sn-ratio: ")
+            print(contender.robustness)
+            self.noise_champion = contender
+            self.noise_design_maker.update_model(self.noise_champion)
+            self.sn_ratio = contender.robustness
+            self.sn_ratio = round(self.sn_ratio, 3)
+            self.attempts = 0
+        else:
+            print(f"no decline in sn ratio after {self.attempts} attempts...")
 
 
 
     def evaluate_factor_design(self):
         print("evaluate factor design:\n")
-        self._print_design(self.factor_candidates.state)
+        self._print_design(self.factor_candidates)
         print("with noise design:\n")
         self._print_design(self.noise_champion)
-        self.factor_candidates.state = self.simulation_model.main(factor_design= self.factor_candidates.state, noise_design= self.noise_champion, competitor_flag= 'factor')
+        self.factor_candidates = self.simulation_model.main(factor_design= self.factor_candidates, noise_design= self.noise_champion, competitor_flag= 'factor')
         return self.factor_candidates.get_best_configuration(self.sn_calc_func)
 
     def evaluate_noise_designs(self):
         print("evaluate noise designs:\n")
-        for design in self.noise_candidates.state:
+        for design in self.noise_candidates:
             self._print_design(design)
         print("on champion factor config:")
         print(self.factor_champion)
-        print(self.simulation_model.main(factor_design= self.factor_champion, noise_design= self.noise_candidates.state, competitor_flag= 'noise'))
-
+        self.noise_candidates = self.simulation_model.main(factor_design= self.factor_champion, noise_design= self.noise_candidates, competitor_flag= 'noise')
+        return self.noise_candidates.get_worst_design(self.sn_calc_func)
 
 
     def _print_design(self, design):

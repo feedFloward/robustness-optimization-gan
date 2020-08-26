@@ -74,6 +74,7 @@ def simulation_run(factor_config : object, noise_config : object):
     '''
     targets = Targets()
     product_mixture = noise_config.product_mix
+    product_mixture = list(map(lambda x: x/sum(product_mixture), product_mixture))
     for repl in range(StaticParameter.REPLICATIONS):
         Machine = namedtuple('Machine', 'proc_time_mean')
         machines = [Machine(proc_time_mean) for proc_time_mean in StaticParameter.MACHINE_PROCESSING_MEAN]
@@ -84,7 +85,7 @@ def simulation_run(factor_config : object, noise_config : object):
         buffer = simpy.Resource(env, capacity= factor_config.buffer_size)
         machine_shop = simpy.FilterStore(env, capacity= factor_config.num_machines)
         machine_shop.items = machines
-        testing_station = simpy.Resource(env, capacity=1)
+        testing_station = simpy.Resource(env, capacity=factor_config.num_testing_station)
         env.process(job_source(env, machines= machine_shop, buffer= buffer, testing_station= testing_station, product_mixture= product_mixture, targets= targets))
         env.run(until= StaticParameter.SIM_TIME)
         targets.THROUGHPUT.append(drain.count)

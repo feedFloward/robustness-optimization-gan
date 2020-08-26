@@ -17,10 +17,9 @@ class SamplingHelpers:
 
 class StaticParameter:
     JOB_INTERVALL : float = 2.
-    MACHINE_PROCESSING_MEAN : List[float] = [1, 3, 5, 7, 9]
-    TESTING_TIME_MEAN : float = 3.
+    MACHINE_PROCESSING_MEAN : List[float] = [1, 3, 5, 7, 9, 1]
+    TESTING_TIME_MEAN : float = 4.
     ERROR_RATE : float = 0.1
-    BUFFER_SIZE : int = 1
     SIM_TIME : int = 5*8*60
     REPLICATIONS : int = 5
     

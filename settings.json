@@ -1,11 +1,10 @@
 {
     "factor_gan_parameter": {
-        "hidden_units_gen": [1024],
-        "hidden_units_disc": [1024],
+        "hidden_units_gen": [512],
+        "hidden_units_disc": [512],
         "latent_dim": [64],
         "lr_gen": 0.0001,
-        "lr_disc": 0.0001,
-        "output_dim": 2
+        "lr_disc": 0.0001
     },
     "noise_gan_parameter": {
         "hidden_units_gen": [1024],
@@ -17,7 +16,7 @@
     "factor_definition": {
         "num_machines": {
             "lower_bound": 1,
-            "upper_bound": 5,
+            "upper_bound": 6,
             "discrete": true,
             "mixture": false,
             "num_mixture_components": 0
@@ -25,6 +24,13 @@
         "buffer_size": {
             "lower_bound": 1,
             "upper_bound": 5,
+            "discrete": true,
+            "mixture": false,
+            "num_mixture_components": 0
+        },
+        "num_testing_station": {
+            "lower_bound": 1,
+            "upper_bound": 3,
             "discrete": true,
             "mixture": false,
             "num_mixture_components": 0
@@ -40,10 +46,10 @@
         }
     },
     "factor_design_definition": {
-        "num_samples": 7
+        "num_samples": 10
     },
     "noise_design_definition": {
-        "num_samples": 5,
+        "num_samples": 7,
         "num_noise_designs": 3
     },
     "response_definition": {
