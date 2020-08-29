@@ -43,6 +43,27 @@ def _re_transform(func):
         return func(maker_object, feedback= sample_to_array, *args, **kwargs)
     return wrapper_re_transform
 
+def config_unique_in_design(func):
+    def wrapper(maker_object, curr_champion=None, *args, **kwargs):
+        design_to_build = []
+        num_attempts_to_create = 0
+        if curr_champion:
+            design_to_build.append(curr_champion)
+        while len(design_to_build) < maker_object.num_samples:
+            if num_attempts_to_create == 10: #10 ist willkürlich
+                return None
+            #check if configuration is unique
+            config = func(maker_object)
+            if not helpers.check_if_config_in_design(config, design_to_build):
+                design_to_build.append(config)
+            else:
+                num_attempts_to_create += 1
+        
+        # return Design([Configuration(**self.parameter.__dict__).from_uniform() for sample in range(self.num_samples)])
+        return Design(design_to_build)
+    return wrapper
+
+
 def print_iteration(func):
     def print_wrapper(optimization, *args, **kwargs):
         print(40*"=")
@@ -177,11 +198,14 @@ class DesignMaker:
         self.parameter = parameter
         self.sampling_model = sampling_model
 
+    @config_unique_in_design
     def get_uniform_sample(self):
-        return Design([Configuration(**self.parameter.__dict__).from_uniform() for sample in range(self.num_samples)])
+        return Configuration(**self.parameter.__dict__).from_uniform()
 
+    @config_unique_in_design
     def get_sample_from_model(self):
-        return Design([Configuration(**self.parameter.__dict__).from_model(self.sampling_model) for sample in range(self.num_samples)])
+        # return Design([Configuration(**self.parameter.__dict__).from_model(self.sampling_model) for sample in range(self.num_samples)])
+        return Configuration(**self.parameter.__dict__).from_model(self.sampling_model)
 
     @_re_transform
     def update_model(self, feedback):
@@ -238,7 +262,6 @@ class Optimization:
         print(self.factor_champion)
         self.sn_ratio = self.factor_champion['sn_ratio']
         # round sn_ratio -> evtl. später als funktion
-        self.sn_ratio = round(self.sn_ratio, 3)
         print("current SN Ratio:")
         print(self.sn_ratio)
 
@@ -247,17 +270,20 @@ class Optimization:
             self.iteration_factors()
             self.iteration_noise()
 
-        print("finished optimization with best factor configuration:")
-        print(self.factor_champion)
-        print("and noise design:")
-        self._print_design(self.noise_champion)
+        self.print_results()
+
 
     @print_iteration
     def iteration_factors(self):
         self.iterations += 1
-        self.factor_candidates = self.factor_design_maker.get_sample_from_model()
+        self.factor_candidates = self.factor_design_maker.get_sample_from_model(curr_champion= self.factor_champion)
+        
+        #if no new configurations were generated:
+        if self.factor_candidates == None:
+            print("WARNING! sampling model was not able to create a design of unique configurations after 10 attempts!")
+            return
         #append current factor champion (champions always tested with changed noise design!)
-        self.factor_candidates.state.append(self.factor_champion)
+        # self.factor_candidates.state.append(self.factor_champion)
         print("factor design tested:")
         self._print_design(self.factor_candidates)
         contender = self.evaluate_factor_design()
@@ -273,7 +299,6 @@ class Optimization:
             self.factor_champion = contender
             self.factor_design_maker.update_model(self.factor_champion)
             self.sn_ratio = contender["sn_ratio"]
-            self.sn_ratio = round(self.sn_ratio, 3)
             self.attempts = 0
         else:
             print(f"no improvement after {self.attempts} attempts...")
@@ -283,7 +308,7 @@ class Optimization:
         self.iterations += 1
         self.noise_candidates = self.noise_design_maker.get_sample_from_model()
         # append current noise champion (always tested with changed factor config)
-        self.noise_candidates.state.append(self.noise_champion)
+        # self.noise_candidates.state.append(self.noise_champion)
         contender = self.evaluate_noise_designs()
         print("worst noise design evaluated")
         self._print_design(contender)
@@ -295,7 +320,6 @@ class Optimization:
             self.noise_champion = contender
             self.noise_design_maker.update_model(self.noise_champion)
             self.sn_ratio = contender.robustness
-            self.sn_ratio = round(self.sn_ratio, 3)
             self.attempts = 0
         else:
             print(f"no decline in sn ratio after {self.attempts} attempts...")
@@ -325,3 +349,9 @@ class Optimization:
         for config in design:
             print("|" + str(config) + "|")
         print(40*"_")
+
+    def print_results(self):
+        print("finished optimization with best factor configuration:")
+        print(self.factor_champion)
+        print("and noise design:")
+        self._print_design(self.noise_champion)

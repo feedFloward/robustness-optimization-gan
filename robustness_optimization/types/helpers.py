@@ -59,7 +59,8 @@ def retransform(feedback, maker_object):
     return retransformed_feedback
 
 def larger_the_better(response_vals):
-    return -10 * np.log(sum(1 / np.array(response_vals)**2)/len(response_vals))
+    # rounds sn ratio to 3 decimal places
+    return round(-10 * np.log(sum(1 / np.array(response_vals)**2)/len(response_vals)), 3)
 
 def smaller_the_better(response_vals):
     return -10 * np.log(sum(np.array(response_vals)**2)/len(response_vals))
@@ -69,6 +70,23 @@ def get_sn_calc_func(target, value, **kwargs):
         return larger_the_better
     elif target == 'min':
         return smaller_the_better
+
+def check_config_equal(conf1, conf2):
+    #remove response and sn_ration keys
+    for conf in [conf1, conf2]:
+        conf.pop('response', None)
+        conf.pop('sn_ratio', None)
+
+    num_keys = len(conf1.keys())
+
+    return len([conf1_el for conf1_el, conf2_el in zip(conf1.items(), conf2.items()) if conf1_el == conf2_el]) == num_keys
+
+def check_if_config_in_design(new_config, design):
+    iterator = iter(design)
+    try:
+        return any(check_config_equal(new_config, rest) for rest in iterator)
+    except StopIteration:
+        return False
 
 def reshape_to_design(values_array, num_configs):
     return np.reshape(values_array, newshape= (num_configs, -1))
