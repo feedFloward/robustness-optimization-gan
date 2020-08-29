@@ -253,6 +253,8 @@ class Optimization:
         self.attempts = 0
         self.iterations = 0
 
+        self.sn_history = []
+
     def run(self):
         print("find best candidate from initial factor design...\n")
         self.factor_champion = self.evaluate_factor_design()
@@ -261,6 +263,7 @@ class Optimization:
         print("best configuration found:")
         print(self.factor_champion)
         self.sn_ratio = self.factor_champion['sn_ratio']
+        self.sn_history.append(self.sn_ratio)
         # round sn_ratio -> evtl. später als funktion
         print("current SN Ratio:")
         print(self.sn_ratio)
@@ -271,6 +274,12 @@ class Optimization:
             self.iteration_noise()
 
         self.print_results()
+
+        return {
+            "best_factor_config": self.factor_champion,
+            "worst_noise_design": self.noise_champion,
+            "sn_history": self.sn_history
+        }
 
 
     @print_iteration
@@ -302,6 +311,7 @@ class Optimization:
             self.attempts = 0
         else:
             print(f"no improvement after {self.attempts} attempts...")
+        self.sn_history.append(self.sn_ratio)
 
     @print_iteration
     def iteration_noise(self):
@@ -323,6 +333,7 @@ class Optimization:
             self.attempts = 0
         else:
             print(f"no decline in sn ratio after {self.attempts} attempts...")
+        self.sn_history.append(self.sn_ratio)
 
 
 
