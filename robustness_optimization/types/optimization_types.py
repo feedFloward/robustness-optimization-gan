@@ -298,6 +298,8 @@ class Optimization:
         contender = self.evaluate_factor_design()
         print("best factor configuration evaluated:")
         print(contender)
+        print("with sn_ratio:")
+        print(contender['sn_ratio'])
 
         #DIESER ABGLEICH WIRD ERSETZT DURCH: IST CONTENDER GLEICH DEM ALTEN CHAMP???????
         if contender["sn_ratio"] > self.sn_ratio:
@@ -322,6 +324,8 @@ class Optimization:
         contender = self.evaluate_noise_designs()
         print("worst noise design evaluated")
         self._print_design(contender)
+        print("with sn ratio:")
+        print(contender.robustness)
         if contender.robustness < self.sn_ratio:
             print("new noise champion found")
             self._print_design(contender)

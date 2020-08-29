@@ -1,4 +1,5 @@
 *.ipynb
+!simpy_usecase.ipynb
 
 /.venv_sim
 /.vscode

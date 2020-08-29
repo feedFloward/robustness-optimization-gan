@@ -9,6 +9,7 @@ from typing import List
 class Generator:
     def __init__(self, hidden_units : List[int], latent_dim : int, output_dim : int):
         self.latent_dim = latent_dim[0]
+        self.output_dim = output_dim
         self.model = Sequential()
         self.model.add(Input(shape=(self.latent_dim,)))
         for num_units in hidden_units:
