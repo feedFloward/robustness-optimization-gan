@@ -1,5 +1,5 @@
 from robustness_optimization.name_tbd_initialization import read_settings
-from robustness_optimization.types.optimization_types import Optimization
+from robustness_optimization.optimization import Optimization
 from robustness_optimization.gan.vanilla_gan import GAN
 from robustness_optimization.interface import SimpyModel
 from robustness_optimization.types.sampling_model import SamplingModel

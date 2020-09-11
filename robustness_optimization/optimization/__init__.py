@@ -1,1 +1,1 @@
-# move optimization class from /types to this folder
+from .optimization import Optimization
