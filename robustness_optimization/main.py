@@ -27,6 +27,7 @@ def main(sim_model_type, sim_model_path, sampling_model_type):
         simulation_model= simulation_model,
         factor_sampling_model= factor_sampling_model,
         noise_sampling_model= noise_sampling_model,
+        out_path= output.DIR_NAME
     )
 
     history = optimization.run()

@@ -47,6 +47,7 @@ def write_results(history):
     print('worst noise design:')
     print(history['worst_noise_design'].state)
 
+    plt.figure()
     plt.ylabel("SN ratio")
     plt.xlabel("# iteration")
     plt.plot(history['sn_history'])

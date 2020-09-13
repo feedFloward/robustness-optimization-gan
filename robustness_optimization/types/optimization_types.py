@@ -1,4 +1,4 @@
-from robustness_optimization.types import helpers
+from robustness_optimization.types import helpers, visualization_helpers
 
 from typing import List, Dict
 
@@ -121,6 +121,9 @@ class Design:
             return sorted(self.state, key= lambda conf : conf['sn_ratio'])[-1]
         elif sn_calc_func.__name__ == 'smaller_the_better':
             return sorted(self.state, key= lambda conf : conf['sn_ratio'])[0]
+
+    def plot_design(self):
+        return visualization_helpers.plot_design(self.state)
 
 class NoiseDesign:
     def __init__(self, configurations : List[Configuration]):

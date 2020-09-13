@@ -22,7 +22,8 @@ class Optimization:
     '''
     contains methods for main logic
     '''
-    def __init__(self, settings, simulation_model, factor_sampling_model, noise_sampling_model):
+    def __init__(self, settings, simulation_model, factor_sampling_model, noise_sampling_model, out_path= None):
+        self.out_path = out_path
         self.settings = settings
         self.simulation_model = simulation_model
         self.factor_design_maker = DesignMaker(parameter= settings.factor_definition, sampling_model= factor_sampling_model, **settings.factor_design_definition())
@@ -77,8 +78,9 @@ class Optimization:
         if self.factor_candidates == None:
             print("WARNING! sampling model was not able to create a design of unique configurations after 10 attempts!")
             return
-        #append current factor champion (champions always tested with changed noise design!)
-        # self.factor_candidates.state.append(self.factor_champion)
+        
+        # if self.out_path:
+        #     self.factor_candidates.plot_design().savefig(self.out_path+'factor_output_iteration_'+str(self.iterations)+'.png')
         print("factor design tested:")
         self._print_design(self.factor_candidates)
         contender = self.evaluate_factor_design()

@@ -1,5 +1,4 @@
 import numpy as np
-from itertools import chain
 
 def uniform(length):
     return np.random.uniform(-1, 1, length)
