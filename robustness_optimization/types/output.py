@@ -16,15 +16,15 @@ class DualOutput(object):
     def __init__(self):
         self.terminal = sys.stdout
         self.logfile = HISTORY_FILE
+
     def write(self, message):
         self.terminal.write(message)
         with open(self.logfile, 'a') as f:
             f.write(message)
+
     def flush(self):
         self.terminal.flush()
         # self.logfile.flush()
-
-    
 
 
 def write_to_output(func):

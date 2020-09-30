@@ -4,6 +4,7 @@
 /.venv_sim
 /.vscode
 /.pytest_cache
+/.idea
 
 __pycache__/
 

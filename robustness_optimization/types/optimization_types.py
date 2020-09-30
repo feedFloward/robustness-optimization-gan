@@ -2,6 +2,7 @@ from robustness_optimization.types import helpers, visualization_helpers
 
 from typing import List, Dict
 
+
 def _to_dict(func):
     def wrapper_to_dict(config, sampling_model=None, *args, **kwargs):
         sample = func(config, sampling_model, *args, **kwargs)
@@ -12,6 +13,7 @@ def _to_dict(func):
         return current_config
     return wrapper_to_dict
 
+
 def _transform(func):
     def wrapper_transform(config, *args, **kwargs):
         sample_dict = func(config, *args, **kwargs)
@@ -21,11 +23,11 @@ def _transform(func):
             param_setting = config.__dict__[param]
             value = helpers.scale_to_param_range(value, param_setting)
 
-            #discretize
+            # discretize
             if param_setting.discrete:
                 value = helpers.make_discrete(value)
 
-            #normalize
+            # normalize
             if param_setting.mixture:
                 value = helpers.normalize(value)
 
@@ -33,15 +35,16 @@ def _transform(func):
 
             sample_dict.update({param : value})
 
-
         return sample_dict
     return wrapper_transform
+
 
 def _re_transform(func):
     def wrapper_re_transform(maker_object, feedback : List[Dict], *args, **kwargs):
         sample_to_array = helpers.retransform(feedback, maker_object)
         return func(maker_object, feedback= sample_to_array, *args, **kwargs)
     return wrapper_re_transform
+
 
 def config_unique_in_design(func):
     def wrapper(maker_object, curr_champion=None, *args, **kwargs):
@@ -50,9 +53,9 @@ def config_unique_in_design(func):
         if curr_champion:
             design_to_build.append(curr_champion)
         while len(design_to_build) < maker_object.num_samples:
-            if num_attempts_to_create == 10: #10 ist willkürlich
+            if num_attempts_to_create == 10: # 10 ist willkürlich
                 return None
-            #check if configuration is unique
+            # check if configuration is unique
             config = func(maker_object)
             if not helpers.check_if_config_in_design(config, design_to_build):
                 design_to_build.append(config)
@@ -66,13 +69,13 @@ def config_unique_in_design(func):
 
 class Configuration:
     def __init__(self, **kwargs):
-        '''
+        """
         Argumente müssten Vektor von Werten sein
         Zuordnung zu den namen der Faktoren über irgendein mapping (indizes)
 
         sollte können:
             funktion um für configuration SN Ration berechnen zu können
-        '''
+        """
         for (key, val) in kwargs.items():
             self.__dict__.update({key: val})
 
@@ -96,10 +99,10 @@ class Configuration:
 
 
 class Design:
-    '''
+    """
     sollte können:
         methoden um configs zu sortieren anhand von SN Ratio
-    '''
+    """
     def __init__(self, configurations : List[Configuration]):
         self.state = configurations
 
@@ -125,6 +128,7 @@ class Design:
     def plot_design(self):
         return visualization_helpers.plot_design(self.state)
 
+
 class NoiseDesign:
     def __init__(self, configurations : List[Configuration]):
         self.state = configurations
@@ -144,9 +148,9 @@ class NoiseDesign:
 
 
 class DesignList:
-    '''
+    """
     list of noise designs
-    '''
+    """
     def __init__(self, designs):
         self.state = designs
 
@@ -167,8 +171,9 @@ class DesignList:
         return sorted(self, key= lambda design: design.robustness)[0]
         # return sorted(self.state, key= lambda design : next(filter(lambda item: 'sn_ratio' in item.keys(), design))['sn_ratio'])[0]
 
+
 class DesignMaker:
-    '''
+    """
     sollte können:
         anhand von Settings.factor_definition/noise_definition initialisiert werden
         methoden zum samplen haben (mit interface zum gan)
@@ -177,7 +182,7 @@ class DesignMaker:
     modell im hintergrund braucht die methoden:
         generate_samples
         update
-    '''
+    """
     def __init__(self, num_samples, parameter, sampling_model):
         self.num_samples = num_samples
         self.parameter = parameter
